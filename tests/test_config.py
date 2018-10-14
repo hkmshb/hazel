@@ -90,3 +90,10 @@ class TestUtilityFunctions:
         for _ in range(5):
             raw_value = uuid4()
             assert slug_to_uuid(uuid_to_slug(raw_value)) == raw_value
+
+    def test_cannot_convert_invalid_slug_to_uuid(self):
+        from uuid import uuid4
+
+        slug = uuid_to_slug(uuid4())[:-4]
+        with pytest.raises(ValueError):
+            slug_to_uuid(slug)

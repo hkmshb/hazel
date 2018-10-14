@@ -9,6 +9,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.6"
+wired = {version = "^0.1.1",optional = true}
+"zope.interface" = {version = "^4.5",optional = true}
+
+
+[tool.poetry.extras]
+services = ["wired", "zope.interface"]
+
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.5"

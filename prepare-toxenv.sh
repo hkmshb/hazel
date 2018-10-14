@@ -8,8 +8,10 @@ toxinidir=$2
 # purge previous build artifacts
 rm -rf ./dist
 
-# build & install package
-poetry install -v
+# install package dependencies
+poetry install -v -E services
+
+# build and install actual package
 poetry build -f wheel
 
 pkg_name=$(ls ./dist | grep .whl)

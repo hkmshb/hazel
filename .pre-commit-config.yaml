@@ -10,4 +10,4 @@ repos:
   hooks:
   - id: pylint
     args: [--rcfile=./.pylintrc]
-    additional_dependencies: [pytest]
+    additional_dependencies: [pytest,wired,zope.interface]
