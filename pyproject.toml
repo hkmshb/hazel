@@ -13,3 +13,43 @@ python = "^3.6"
 [tool.poetry.dev-dependencies]
 pytest = "^3.5"
 pytest-cov = "^2.5"
+pre-commit = "^1.11"
+
+
+[tool.poetry.scripts]
+
+
+[tool.black]
+line-length = 79
+check = true
+diff = true
+skip-string-normalization = true
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+skipsdist = true
+envlist = lint, py36
+
+[testenv]
+passenv = HOME USER
+whitelist_externals =
+    bash
+    poetry
+skip_install = true
+commands =
+    bash ./prepare-toxenv.sh {envbindir} {toxinidir}
+    poetry run py.test --cov-report term-missing --cov=hazel tests
+
+[testenv:lint]
+whitelist_externals =
+    bash
+    poetry
+skip_install = true
+deps =
+    pylint
+commands =
+    bash ./prepare-toxenv.sh {envbindir} {toxinidir}
+    pylint --rcfile={toxinidir}/.pylintrc {toxinidir}/src/hazel {toxinidir}/tests
+"""
