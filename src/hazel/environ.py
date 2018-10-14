@@ -4,15 +4,14 @@ When this module is loaded it will try to set proper values for HOME
 and USER if they are not set, and on Windows it will also try to set
 APPDATA
 '''
-import os
 import collections
-
 import logging
-log = logging.getLogger('hazel')
+import os
+
+_log = logging.getLogger('hazel')  # pylint: disable=invalid-name
 
 
 class Environ(collections.MutableMapping):
-
     def __getitem__(self, key):
         return os.environ[key]
 
@@ -55,37 +54,40 @@ class Environ(collections.MutableMapping):
         value = self.get(key, default)
         if value is None:
             return []
-        elif isinstance(value, str):
+        if isinstance(value, str):
             if sep is None:
                 sep = os.pathsep
             return value.split(sep)
-        else:
-            assert isinstance(value, (list, tuple))
-            return value
+        assert isinstance(value, (list, tuple))
+        return value
 
 
 # Singleton Instance
-environ = Environ()
+environ = Environ()  # pylint: disable=invalid-name
 
 
-if os.name == 'nt':
+if os.name == 'nt':  # pragma: no cover
     # Windows specific environment variables
-    if not 'USER' in environ or not environ['USER']:
+    if 'USER' not in environ or not environ['USER']:
         environ['USER'] = environ['USERNAME']
-    if not 'HOME' in environ or not environ['HOME']:
+    if 'HOME' not in environ or not environ['HOME']:
         if 'USERPROFILE' in environ:
             environ['HOME'] = environ['USERPROFILE']
         elif 'HOMEDRIVE' in environ and 'HOMEPATH' in environ:
-            environ['HOME'] = \
-                environ['HOMEDRIVE'] + environ['HOMEPATH']
-    if not 'APPDATA' in environ or not environ['APPDATA']:
+            environ['HOME'] = environ['HOMEDRIVE'] + environ['HOMEPATH']
+    if 'APPDATA' not in environ or not environ['APPDATA']:
         environ['APPDATA'] = environ['HOME'] + '\\Application Data'
 
-if not os.path.isdir(environ['HOME']):
-    logmsg = "Env variable $HOME does not point to an existing directory: {}"
-    log.error(logmsg.format(environ['HOME']))
 
-if not 'USER' in environ or not environ['USER']:
+if not os.path.isdir(environ['HOME']):  # pragma: no cover
+    _log.error(
+        "Env variable $HOME does not point to an existing directory: %s",
+        environ['HOME'],
+    )
+
+
+if 'USER' not in environ or not environ['USER']:  # pragma: no cover
     environ['USER'] = os.path.basename(environ['HOME'])
-    logmsg = "Env variable $USER had not value and got set to '{}'"
-    log.info(logmsg.format(environ['USER']))
+    _log.error(
+        "Env variable $USER had no value and got set to %s", environ['USER']
+    )

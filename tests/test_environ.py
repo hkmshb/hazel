@@ -1,3 +1,4 @@
+# pylint: disable=len-as-condition
 import os
 import pytest
 from hazel import environ
@@ -11,6 +12,7 @@ class EnvironContext:
         with EnvironContext({'HOME': '/test/foo', 'USER': 'abdul'}):
             ...
     '''
+
     environ = os.environ
 
     def __init__(self, env_context):
@@ -18,29 +20,29 @@ class EnvironContext:
         self.env_backup = {}
 
     def __enter__(self):
-        for k, v in self.env_context.items():
-            self.env_backup[k] = self.environ.get(k)
-            if v:
-                self.environ[k] = v
-            elif k in self.environ:
-                del self.environ[k]
+        for key, value in self.env_context.items():
+            self.env_backup[key] = self.environ.get(key)
+            if value:
+                self.environ[key] = value
+            elif key in self.environ:
+                del self.environ[key]
 
     def __exit__(self, *exc_info):
-        for k, v in self.env_backup.items():
-            if v:
-                self.environ[k] = v
-            elif k in self.environ:
-                del self.environ[k]
+        for key, value in self.env_backup.items():
+            if value:
+                self.environ[key] = value
+            elif key in self.environ:
+                del self.environ[key]
         return False
 
 
 class TestEnviron:
-
     def test_get_set(self):
         k = 'HAZEL_ENV_MODULE'
+        keyx, keyy = ('KEY-X', 'KEY-Y')
 
-        with EnvironContext({k: None}):
-            assert k not in environ
+        with EnvironContext({k: None, keyx: '', keyy: 'stone'}):
+            assert k not in environ.keys()
             pytest.raises(KeyError, environ.__getitem__, k)
             assert environ.get(k) is None
             assert environ.get(k, 'FOO') == 'FOO'
@@ -51,6 +53,10 @@ class TestEnviron:
             assert len(environ) > 0
             assert k in environ
 
+            assert keyx not in environ
+            assert keyy in environ
+
+            assert environ.get(keyx, 'DEFAULT') == 'DEFAULT'
             del environ[k]
 
     def test_get_list_path(self):
@@ -62,6 +68,15 @@ class TestEnviron:
         else:
             errmsg = 'No existing dirs found in PATH: {}'
             raise AssertionError(errmsg.format(paths))
+
+    def test_get_list_when_value_is_none(self):
+        key = 'KEY-X'
+        with EnvironContext({key: None}):
+            assert key not in environ
+            assert environ.get_list(key) == []
+
+            value = environ.get_list(key, ['/', '/users'])
+            assert value and isinstance(value, (list, tuple))
 
     def test_home_and_user(self):
         user = environ.get('USER')
