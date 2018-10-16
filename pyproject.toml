@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hazel"
-version = "0.1.1"
+version = "0.1.2"
 description = "A reusable toolkit library for desktop and web applications"
 authors = ["Abdul-Hakeem Shaibu <hkmshb@gmail.com>"]
 keywords = ["hazel", "toolkit"]
