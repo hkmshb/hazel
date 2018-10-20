@@ -12,14 +12,14 @@ def readfile(name):
 
 
 requires = ['sqlalchemy', 'zope.sqlalchemy']
-services_require = ['wired', 'zope.interface']
+services_require = ['zope.interface']
 devenv_require = ['pre-commit']
 tests_require = ['pytest', 'pytest-cov']
 
 
 setup(
     name='hazel',
-    version='0.1.2',
+    version='0.2',
     description='A reusable toolkit library for desktop and web applications',
     long_description='\n\n'.join(
         [readfile('CHANGES.md'), readfile('README.md')]

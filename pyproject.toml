@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hazel"
-version = "0.1.2"
+version = "0.2"
 description = "A reusable toolkit library for desktop and web applications"
 authors = ["Abdul-Hakeem Shaibu <hkmshb@gmail.com>"]
 keywords = ["hazel", "toolkit"]
@@ -13,7 +13,7 @@ python = "^3.6"
 
 
 [tool.poetry.extras]
-services = ["wired", "zope.interface"]
+services = ["zope.interface"]
 
 
 [tool.poetry.dev-dependencies]
