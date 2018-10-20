@@ -1,71 +1,105 @@
-# pylint: disable=C0330
-from wired import ServiceRegistry
-from zope.interface import Interface
+# pylint: disable=C0330, no-self-argument
+from zope.interface import Attribute, Interface, implementer
+from zope.interface.registry import Components
 
 
-class SingletonServiceWrapper:
-    def __init__(self, service):
-        self.service = service
-
-    def __call__(self, context, scope):
-        return self.service
+class ServiceError(Exception):
+    """Exception thrown for service related errors."""
 
 
-class ProxyFactory:
-    def __init__(self, factory):
-        self.factory = factory
+class IContext(Interface):
+    """A marker interface for a context object.
+    """
 
-    def __call__(self, container):
-        scope = None
-        return self.factory(container.context, scope)
+    registry = Attribute('registry')
+    settings = Attribute('settings')
 
 
-class _RegistrarBase:
-    """Represents the base class for classes able to register and manage
-    services and function as an IoC object.
+class IRegistry(Interface):
+    """A marker interface for a registry dependency container.
+    """
 
-    This is an internal class and not meant for directy use in code. It
-    was provided as a base class to aid unit testing.
+    _container = Attribute('_container')
+
+    def find_service(iface, context, name):
+        """Finds a service registered with the provided interface.
+
+        This can be used to locate services registered either as a utility or
+        factory service. If no service exists for either of the categories an
+        error is thrown.
+        """
+
+    def register_service(service, iface, name):
+        """Registers a singleton utility service."""
+
+    def register_factory(factory, iface, requires, name):
+        """Registers a service factory."""
+
+
+@implementer(IContext)
+class Context(dict):
+    """Defines objects available within an execution context.
+    """
+
+    def __init__(self, registry=None, settings=None):
+        super().__init__()
+        if not registry:
+            registry = Registry()
+
+        self.registry = registry
+        self.set_settings(settings)
+
+    def set_settings(self, settings):
+        if not settings:
+            settings = {}
+        self.update(settings)
+
+
+@implementer(IRegistry)
+class Registry:
+    """A service registry for dependency management.
     """
 
     def __init__(self):
-        self._registry = ServiceRegistry()
-
-    @property
-    def services(self):
-        key = '_container'
-        if not hasattr(self, key):
-            container = self._registry.create_container()
-            setattr(self, key, container)
-        return getattr(self, key)
-
-    def register_service(
-        self, service, iface=Interface, context=None, name=''
-    ):
-        service_factory = SingletonServiceWrapper(service)
-        self.register_service_factory(
-            service_factory, iface, context=context, name=name
-        )
-
-    def register_service_factory(
-        self, service_factory, iface=Interface, context=None, name=''
-    ):
-        self._registry.register_factory(
-            ProxyFactory(service_factory), iface, context=context, name=name
-        )
-
-    def find_service_factory(self, iface, context=None, name=''):
-        factory = self._registry.find_factory(
-            iface, context=context, name=name
-        )
-        if not factory:
-            raise LookupError('could not find registered service')
-        if isinstance(factory, ProxyFactory):
-            return factory.factory
-        return factory
+        self._component = Components()
 
     def find_service(self, iface, context=None, name=''):
-        return self.services.get(iface, context=context, name=name)
+        """Finds a service registered with the provided interface.
+
+        This can be used to locate services registered either as a utility or
+        factory service. If no service exists for either of the categories an
+        error is thrown.
+        """
+        service = self._component.queryUtility(iface, name=name)
+        if not service:
+            service = self._component.queryAdapter(context, iface, name=name)
+
+        if not service:
+            msgfmt = "No utility or factory service found for {}"
+            iface_name = getattr(iface, '__name__', str(iface))
+            raise ServiceError(msgfmt.format(iface_name))
+        return service
+
+    def register_service(self, service, iface, name=''):
+        """Registers a singleton utility service.
+
+        A callable serving as a factory to lazily create the utility service
+        can be provided in place of the service instance.
+        """
+        key = 'component' if not callable(service) else 'factory'
+        kwargs = {'provided': iface, key: service, 'name': name}
+        self._component.registerUtility(**kwargs)
+
+    def register_factory(self, factory, iface, required=None, name=''):
+        """Registers a service factory.
+        """
+        required = required or Interface
+        if not isinstance(required, (list, tuple)):
+            required = (required,)
+
+        self._component.registerAdapter(
+            factory=factory, provided=iface, required=required, name=name
+        )
 
 
 class SingletonMeta(type):
@@ -85,6 +119,6 @@ class SingletonMeta(type):
         cls.__new__ = staticmethod(meta_new)
 
 
-class Registrar(_RegistrarBase, metaclass=SingletonMeta):
+class RegistrySingleton(Registry, metaclass=SingletonMeta):
     """A singleton class for registering and managing services.
     """
